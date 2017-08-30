@@ -91,8 +91,9 @@ namespace AvalonStudio
             _toolBarDefinitions = new List<ToolBarDefinition>();
             _toolBarItemGroupDefinitions = new List<ToolBarItemGroupDefinition>();
             _toolBarItemDefinitions = new List<ToolBarItemDefinition>();
-
-            IoC.RegisterConstant(this, typeof(IShell));
+            
+            IoC.RegisterConstant<IShell>(this);
+            IoC.RegisterConstant(this);
 
             foreach (var extension in extensions)
             {
@@ -121,6 +122,8 @@ namespace AvalonStudio
             MiddleTopTabs = new TabControlViewModel();
 
             ModalDialog = new ModalDialogViewModelBase("Dialog");
+
+            QuickCommander = new QuickCommanderViewModel();
 
             OnSolutionChanged = Observable.FromEventPattern<SolutionChangedEventArgs>(this, nameof(SolutionChanged)).Select(s => s.EventArgs.NewValue);
 
@@ -349,6 +352,8 @@ namespace AvalonStudio
 
         public StatusBarViewModel StatusBar { get; }
 
+        public QuickCommanderViewModel QuickCommander { get; }
+
         public CancellationTokenSource ProcessCancellationToken { get; private set; }
 
         public IEnumerable<ISolutionType> SolutionTypes => _solutionTypes;
@@ -458,7 +463,7 @@ namespace AvalonStudio
             DocumentTabs.InvalidateSeperatorVisibility();
         }
 
-        public IEditor OpenDocument(ISourceFile file, int line, int startColumn = -1, int endColumn = -1, bool debugHighlight = false, bool selectLine = false)
+        public IEditor OpenDocument(ISourceFile file, int line, int startColumn = -1, int endColumn = -1, bool debugHighlight = false, bool selectLine = false, bool focus = true)
         {
             bool restoreFromCache = false;
 
@@ -522,6 +527,11 @@ namespace AvalonStudio
                     if (selectLine || debugHighlight)
                     {
                         (DocumentTabs.SelectedDocument as IEditor).GotoPosition(line, startColumn != -1 ? 1 : startColumn);
+                    }
+
+                    if(focus)
+                    {
+                        (DocumentTabs.SelectedDocument as IEditor).Focus();
                     }
 
                     if (documentToClose != null)
@@ -606,6 +616,11 @@ namespace AvalonStudio
             {
                 Console.WriteLine($"No toolchain selected for {project.Name}");
             }
+        }
+
+        public void ShowQuickCommander()
+        {
+            QuickCommander.IsVisible = true;
         }
 
         public ObservableCollection<object> Tools
